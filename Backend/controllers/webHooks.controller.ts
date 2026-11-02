@@ -81,7 +81,7 @@ try {
           `${first_name || ""} ${last_name || ""}`.trim() ||
           email.split("@")[0],
         email,
-        user: id,
+        clerkUserId: id,
         savedPosts: [],
       });
 

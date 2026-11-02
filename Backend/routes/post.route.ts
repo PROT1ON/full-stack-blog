@@ -7,10 +7,11 @@ import {
   getPost,
   updatePost,
   deletePost,
+  uploadAuth,
 } from "../controllers/post.controller.ts";
 
 const router = express.Router();
-
+router.post('/upload-image',uploadAuth)
 router.post("/", createPost);
 router.get("/", getPosts);
 router.get("/:id", getPost);

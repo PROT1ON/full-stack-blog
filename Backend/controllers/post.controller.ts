@@ -1,33 +1,64 @@
 
 import { Request, Response } from "express";
 import Post from "../models/Post.ts";
+import { getAuth } from "@clerk/express";
+import User from "../models/Users.ts";
+import ImageKit from "@imagekit/nodejs";
 
-// CREATE POST
 export const createPost = async (req: Request, res: Response) => {
   try {
-    const clerkUserId = req.auth?.userId
+    const { userId } = getAuth(req);
+   
 
-    if(!clerkUserId) {
-        return res.status(401).json('not aauthenticted')
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
     }
-    const { title, slug, excerpt, desc, isFeatured, user } = req.body;
 
-    const newPost = await Post.create({
-      title,
+    // Find MongoDB user using Clerk ID
+   const user = await User.findOne({
+  clerkUserId: userId,
+  
+});
+console.log(user);
+
+console.log("Authenticated Clerk ID:", userId);
+console.log("MongoDB user:", user);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    //slug generation fnuctoin 
+    let slug = req.body.title.toLowerCase().replace(/ /g,"-")
+
+    let existingPost = await Post.findOne({slug: slug})
+
+    let counter = 2
+
+    while(existingPost) {
+      slug = `${slug}-${counter}`
+      existingPost = await Post.findOne({slug: slug})
+      counter ++ 
+    }
+    // Save MongoDB ObjectId in Post
+    const post = await Post.create({
+      ...req.body,
       slug,
-      excerpt,
-      desc,
-      isFeatured,
-      user,
+      user: user._id,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Post created successfully",
-      post: newPost,
+      post,
     });
+
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -56,10 +87,7 @@ export const getPosts = async (req: Request, res: Response) => {
 // GET SINGLE POST
 export const getPost = async (req: Request, res: Response) => {
   try {
-    const post = await Post.findById(req.params.id).populate(
-      "user",
-      "username email"
-    );
+    const post = await Post.findOne({slug:req.params.slug})
 
     if (!post) {
       return res.status(404).json({
@@ -135,3 +163,14 @@ export const deletePost = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+const client = new ImageKit({
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY
+  
+});
+//image loaa
+export const uploadAuth = async(req:Request, res:Response ) => {
+  const { token, expire, signature } = client.helper.getAuthenticationParameters();
+  res.send({ token, expire, signature, publicKey: process.env.IMAGEKIT_PUBLIC_KEY });
+}

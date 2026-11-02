@@ -25,6 +25,11 @@ const PostSchema = new Schema({
         type: Boolean,
         default: []
     },
+    category: {
+        type:String,
+        default: "general",
+        
+    },
     user: {
         type:Schema.Types.ObjectId, ref: 'User',  required: true
     }

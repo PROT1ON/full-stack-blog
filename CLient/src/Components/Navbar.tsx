@@ -1,10 +1,16 @@
 import { Image } from '@imagekit/react'
-import React, { useState } from 'react'
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react'
+import React, { useEffect, useState } from 'react'
+import { getToken, Show, SignInButton, SignUpButton, useAuth, UserButton } from '@clerk/react'
 import { Link } from 'react-router-dom'
 import SearchComponent from './SearchComponent'
 
 const Navbar = () => {
+
+  const {getToken} = useAuth()
+
+  // useEffect ( () => {
+  //   getToken().then((token => console.log(token)))
+  // },[])
   const [open,setOpen] = useState(false)
   const [active,isactive]=useState(false)
   return (

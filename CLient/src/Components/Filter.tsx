@@ -1,5 +1,6 @@
+
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { useSearchParams } from 'react-router-dom'
 
 export type FilterType =
   | "Oldest"
@@ -7,38 +8,30 @@ export type FilterType =
   | "Most Liked"
   | "Most Discussed"
 
-type FilterProps = {
-  onFilterChange: (filter: FilterType) => void
-}
+const Filter = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
 
-type FilterForm = {
-  filter: FilterType
-}
+  const selectedFilter = searchParams.get('sort') || 'Latest'
 
-const Filter = ({ onFilterChange }: FilterProps) => {
-
-  const { register, handleSubmit } = useForm<FilterForm>({
-    defaultValues: {
-      filter: "Latest"
-    }
-  })
-
-  const onSubmit = (data: FilterForm) => {
-    onFilterChange(data.filter)
+  const handleFilterChange = (value: FilterType) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('sort', value)
+    setSearchParams(params)
   }
 
   return (
-    <form onChange={handleSubmit(onSubmit)}>
-      <select
-        {...register('filter')}
-        className='border rounded-lg px-4 py-2'
-      >
-        <option value="Latest">Latest</option>
-        <option value="Oldest">Oldest</option>
-        <option value="Most Liked">Most Liked</option>
-        <option value="Most Discussed">Most Discussed</option>
-      </select>
-    </form>
+    <select
+      value={selectedFilter}
+      onChange={(e) =>
+        handleFilterChange(e.target.value as FilterType)
+      }
+      className='border rounded-lg px-4 py-2'
+    >
+      <option value="Latest">Latest</option>
+      <option value="Oldest">Oldest</option>
+      <option value="Most Liked">Most Liked</option>
+      <option value="Most Discussed">Most Discussed</option>
+    </select>
   )
 }
 

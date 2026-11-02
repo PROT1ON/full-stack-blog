@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react'
 import React, { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 type SearchType = {
   page: 'Home' | 'Blog'
@@ -7,7 +8,15 @@ type SearchType = {
 
 const SearchComponent = ({ page }: SearchType) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParmss] = useSearchParams()
 
+  const searchedQuery = searchParmss.get('serched') || ""
+  const handleSearch = (e:React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.currentTarget.value)
+    const params = new URLSearchParams(searchParmss)
+   const value =  params.set('search', e.currentTarget.value)    
+  }
   return (
     <div className="w-full h-10 ">
 
@@ -40,11 +49,14 @@ const SearchComponent = ({ page }: SearchType) => {
 
         </div>
       ) : (
-        <form className=''>
+        
             <input className='placeholder:font-semibold w-full px-4 py-4 rounded-full ring-gray-100 ring-1'
-            placeholder='Search titles, excerpts, keywords(press *Enter*)'>
+            placeholder='Search titles, excerpts, keywords(press *Enter*)'
+            value={searchQuery}
+            onChange={handleSearch}
+            >
             </input>
-        </form>
+       
       )}
 
     </div>

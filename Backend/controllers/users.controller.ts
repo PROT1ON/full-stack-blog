@@ -4,27 +4,29 @@ import User from "../models/Users.ts";
 
 // CREATE USER
 export const createUser = async (req: Request, res: Response) => {
-  try {
-    const { userName, email, user } = req.body;
+try {
+  const {
+    userName,
+    email,
+    clerkUserId,
+  } = req.body;
 
-    const newUser = await User.create({
-      userName,
-      email,
-      user,
-    });
+  const newUser = await User.create({
+    userName,
+    email,
+    clerkUserId,
+    savedPosts: [],
+  });
 
-    res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      user: newUser,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  return res.status(201).json({
+    success: true,
+    user: newUser,
+  });
+
+} catch (error) {
+  console.error(error);
+}
+}
 
 // GET ALL USERS
 export const getUsers = async (req: Request, res: Response) => {
@@ -44,9 +46,21 @@ export const getUsers = async (req: Request, res: Response) => {
 };
 
 // GET SINGLE USER
+// GET SINGLE USER BY CLERK ID
 export const getUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await User.findOne({
+      clerkUserId: userId,
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -55,12 +69,13 @@ export const getUser = async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       user,
     });
+
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
