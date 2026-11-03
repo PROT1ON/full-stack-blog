@@ -1,7 +1,8 @@
 
 import { Request, Response } from "express";
 import User from "../models/Users.ts";
-
+import { getAuth} from "@clerk/express"
+import Post from "../models/Post.ts";
 // CREATE USER
 export const createUser = async (req: Request, res: Response) => {
 try {
@@ -139,17 +140,19 @@ export const deleteUser = async (req: Request, res: Response) => {
 };
 
 // SAVE POST
-export const savePost = async (req: Request, res: Response) => {
-  try {
-    const { postId } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        $addToSet: { savedPosts: postId },
-      },
-      { new: true }
-    );
+export const getUsersavePost = async (req: Request, res: Response) => {
+  try {
+    const userId = req.auth.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    const user = await User.findOne({ clerkUserId: userId });
 
     if (!user) {
       return res.status(404).json({
@@ -158,15 +161,87 @@ export const savePost = async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Post saved successfully",
       savedPosts: user.savedPosts,
     });
-  } catch (error: any) {
-    res.status(500).json({
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const savePosts = async (req: Request, res: Response) => {
+  try {
+    // Get Clerk authenticated user
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    // Get post ID
+    const { postId } = req.body;
+
+    if (!postId || typeof postId !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Valid PostId is required",
+      });
+    }
+
+    // Find MongoDB user
+    const user = await User.findOne({
+      clerkUserId: userId,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if post is already saved
+    const existingSave = user.savedPosts.some(
+      (id) => id === postId
+    );
+
+    if (existingSave) {
+      // Unsave post
+      user.savedPosts = user.savedPosts.filter(
+        (id) => id !== postId
+      );
+    } else {
+      // Save post
+      user.savedPosts.push(postId);
+    }
+
+    // Save changes to MongoDB
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: existingSave
+        ? "Post removed from saved posts"
+        : "Post saved successfully",
+      savedPosts: user.savedPosts,
+    });
+
+  } catch (error) {
+    console.error("Save post error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

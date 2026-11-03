@@ -14,16 +14,16 @@ const PostSchema = new Schema({
      excerpt: {
         type: String,
         required: true,
-        unique: true
+        
     },
      desc: {
         type: String,
         required: true,
-        unique: true
+        
     },
     isFeatured: {
         type: Boolean,
-        default: []
+        default: false
     },
     category: {
         type:String,
@@ -32,6 +32,26 @@ const PostSchema = new Schema({
     },
     user: {
         type:Schema.Types.ObjectId, ref: 'User',  required: true
+    },
+    Liked: {
+        type: [String],
+        default:[]
+    },
+    comments: {
+        type: [
+            {
+                user: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref:"User",
+                    required: true
+                },
+                comment: {
+                    type: String,
+                    required: true,
+                },
+            },
+        ],
+        default: [],
     }
 }, {timestamps: true})
 

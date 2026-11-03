@@ -1,51 +1,47 @@
 import React from "react";
-import { useParams } from "react-router-dom";
-import { items } from "../Components/Card";
+import { useParams, useSearchParams } from "react-router-dom";
 import Image from "../Components/Image";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, Link, MessageCircle } from "lucide-react";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import CommentsForm from "../Components/CommentsForm"
+import FetchComments from "../Components/FetchComments";
+import LikeButton from "../Components/LikePost";
+import CopyLinkButton from "../Components/CopyLink";
+import BlogActions from "../Components/BlogActions";
+
 
 const SinglePostPage = () => {
-  const commentSchema = z.object({
-    comment: z
-      .string()
-      .min(3, "Comment must be at least 3 characters")
-      .max(500, "Comment cannot exceed 500 characters"),
-  });
-
-  type CommentForm = z.infer<typeof commentSchema>;
-
+    
   const { slug } = useParams();
-
-  console.log("URL slug:", slug);
-  console.log(
-    "Available slugs:",
-    items.map((p) => p.slug),
-  );
-
-  const post = items.find((p) => p.slug.trim() === slug?.trim());
+  const url = useSearchParams()
+   const { isPending, error, data:post} = useQuery({
+      queryKey: ['SingleBlog',slug],
+      queryFn: async () => {
+        const response = await axios.get(
+         `${import.meta.env.VITE_API_URL}/blogs/${slug}`,
+        )
+        if (!response) throw new Error('Failed to fetch repo data')
+          return response.data.post
+      },
+    })
+    if (isPending) return <p>Loading...</p>;
+    
+    if (error) return 'An error has occurred: ' + error.message
 
   console.log("Found post:", post);
 
   if (!post) {
     return <div>Post not found!</div>;
   }
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<CommentForm>({
-    resolver: zodResolver(commentSchema),
-  });
+ 
 
-  const onSubmit = async (data: CommentForm) => {
-    console.log(data);
 
-    reset();
-  };
+ 
+  const Poster = post.user?.userName || "Anonymous";
   return (
     <div className="flex flex-col w-full min-h-screen justify-start  px-8 py-4 sm:px-32 sm:py-8 ">
       {/* BreadCrums */}
@@ -68,59 +64,37 @@ const SinglePostPage = () => {
         <p className="font-light leading-1 text-3xl italic">{post.excerpt}</p>
         <div className="flex flex-row items-center  gap-2 text-xs  py-6">
           <div className="p-1.5 rounded-full border-violet-600 border">
-            {post.publisher
+            {Poster
               .split(" ")
               .map((w) => w[0])
               .join("")
               .toUpperCase()}
           </div>
 
-          <h2 className="font-bold">{post.publisher}</h2>
-          <span>{post.date.toLocaleDateString()}</span>
+          
+          <span>{post.createdAt}</span>
           <Heart className="text-red-400" />
-          {post.Liked}
+          {post.Liked.length}
 
           <MessageCircle className="text-lime-400" />
           {post.comments}
         </div>
-        <p className="">{post.description}</p>
+       <h2 className="font-bold">{post.desc}</h2>
         <div className="border-b border-t border-gray-300 my-2 sm:my-10 p-4 flex gap-8">
-          <button className="flex  gap-2 px-4 py-3 border-gray-300 border rounded-full">
-            <Heart />
-            Like
-          </button>
-          <button className="flex  gap-2 px-4 py-3 border-gray-300 border rounded-full">
-            <Heart />
-            Copy Link
-          </button>
+        <LikeButton postId={post._id} />
+          <CopyLinkButton />
+        </div>
+        <div className="">
+          <BlogActions postId={post._id} />
         </div>
         <div className="flex flex-col my-10 p-4 flex gap-8">
           <h2 className="font-bold text-3xl">
             Comments
             <span>({post.comments})</span>
           </h2>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-3"
-          >
-            <textarea
-              {...register("comment")}
-              placeholder="Write your comment..."
-              className="w-full min-h-32 p-4 border rounded-xl resize-none focus:outline-none focus:border-purple-500"
-            />
-
-            {errors.comment && (
-              <p className="text-red-500 text-sm">{errors.comment.message}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-purple-600 text-white px-6 py-3 rounded-full self-start disabled:opacity-50"
-            >
-              Post Comment
-            </button>
-          </form>
+          <CommentsForm  postId={post._id}/>
+          <FetchComments postId={post._id} />
+          
         </div>
       </div>
     </div>

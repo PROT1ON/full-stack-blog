@@ -10,8 +10,8 @@ import webHookRouter from "./routes/webhook.ts";
 import userRouter from "./routes/user.route.ts";
 import connectDB from "./lib/connectDb.ts";
 import { getAuth } from "@clerk/express";
-
-
+import commentsRouter from "./routes/comment.route.ts"
+import likesRouter from "./routes/liked.route.ts"
 const app = express();
 const PORT = 5000;
 
@@ -73,7 +73,8 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/blogs", postRoute);
 app.use("/api/users", userRouter);
-
+app.use("/api/comments", commentsRouter);
+app.use("/api/likes", likesRouter);
 const startServer = async () => {
   try {
     await connectDB();

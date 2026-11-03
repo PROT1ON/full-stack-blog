@@ -34,7 +34,7 @@ console.log("MongoDB user:", user);
     }
     //slug generation fnuctoin 
     let slug = req.body.title.toLowerCase().replace(/ /g,"-")
-
+    console.log(slug)
     let existingPost = await Post.findOne({slug: slug})
 
     let counter = 2
@@ -50,7 +50,7 @@ console.log("MongoDB user:", user);
       slug,
       user: user._id,
     });
-
+    console.log(post)
     return res.status(201).json({
       success: true,
       message: "Post created successfully",
@@ -58,23 +58,35 @@ console.log("MongoDB user:", user);
     });
 
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  console.error("POST CREATION FAILED:", error);
 
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+    errorCode: error.code,
+    keyPattern: error.keyPattern,
+  });
+}
+  }
 // GET ALL POSTS
 export const getPosts = async (req: Request, res: Response) => {
   try {
+
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 2
     const posts = await Post.find()
       .populate("user", "username email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip((page -1) * limit)
+      .limit(limit)
 
+      const totalPosts = await Post.countDocuments()
+
+      const hasMore = page * limit < totalPosts
     res.status(200).json({
       success: true,
       posts,
+      hasMore
     });
   } catch (error: any) {
     res.status(500).json({
@@ -164,13 +176,38 @@ export const deletePost = async (req: Request, res: Response) => {
   }
 };
 
+export const uploadAuth = async (req: Request, res: Response) => {
+  try {
+    console.log("Upload auth controller reached");
 
-const client = new ImageKit({
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY
-  
-});
-//image loaa
-export const uploadAuth = async(req:Request, res:Response ) => {
-  const { token, expire, signature } = client.helper.getAuthenticationParameters();
-  res.send({ token, expire, signature, publicKey: process.env.IMAGEKIT_PUBLIC_KEY });
-}
+    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+    const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
+
+    console.log("Private key exists:", !!privateKey);
+    console.log("Public key exists:", !!publicKey);
+
+    if (!privateKey || !publicKey) {
+      throw new Error("ImageKit environment variables missing");
+    }
+
+    const client = new ImageKit({
+      privateKey,
+    });
+
+    const auth = client.helper.getAuthenticationParameters();
+
+    console.log("ImageKit authentication generated");
+
+    return res.status(200).json({
+      ...auth,
+      publicKey,
+    });
+
+  } catch (error) {
+    console.error("ImageKit ERROR:", error);
+
+    return res.status(500).json({
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

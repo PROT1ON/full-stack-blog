@@ -8,7 +8,7 @@ const HeroComponent = () => {
         {/* Title n texts */}
         <div className='flex flex-col w-1/2 h-full justify-start gap-4 items-start px-4 py-3 md:px-12 md:py-10'>
             <div className='relative w-full h-64'>
-                <Image src='/Blog%20/fog1.avif' className='absolute left-0 inset-0 h-full w-full object-cover' />
+                <Image src='/Blog%20/d1b4e137-513d-42ec-b80a-bfcba8fbe98b.png' className='absolute left-0 inset-0 h-full w-full object-cover' />
             </div>
             {/* Community Joutnal */}
             <h2 className='text-md font-light italic uppercase'>
